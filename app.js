@@ -8,7 +8,7 @@ app.use(express.json());
 // Dùng cho healthcheck
 app.get('/health', (req, res) => {
     const ok = mongoose.connection.readyState === 1;
-    res.status(ok ? 200 : 503).json({ status: ok ? 'ok' : 'db_down' });
+    res.status(ok ? 200 : 503).json({ status: ok ? 'ok' : 'db_down', version: '1.0.1' });
 });
 
 // CREATE
