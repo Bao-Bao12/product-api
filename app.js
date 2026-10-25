@@ -1,11 +1,15 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Product = require('./models/Product');
 
 const app = express();
 app.use(express.json());
 
 // Dùng cho healthcheck
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/health', (req, res) => {
+    const ok = mongoose.connection.readyState === 1;
+    res.status(ok ? 200 : 503).json({ status: ok ? 'ok' : 'db_down' });
+});
 
 // CREATE
 app.post('/products', async (req, res) => {
