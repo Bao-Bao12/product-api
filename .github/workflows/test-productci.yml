@@ -1,0 +1,27 @@
+name: Test Product CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  simple-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lấy mã nguồn
+        uses: actions/checkout@v4
+
+      - name: Cài Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Cài thư viện
+        run: npm ci
+
+      - name: Kiểm tra cú pháp
+        run: node --check app.js && node --check server.js
+
+      - name: Báo thành công
+        run: echo "CI đơn giản OK"
