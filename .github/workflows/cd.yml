@@ -27,3 +27,23 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/product-api:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/product-api:${{ github.event.workflow_run.head_sha }}
+    deploy-local:
+    needs: push-image
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Kéo image mới và khởi động
+        shell: powershell
+        run: |
+          docker compose -f docker-compose-prod.yaml pull
+          docker compose -f docker-compose-prod.yaml up -d
+
+      - name: Chờ healthy và kiểm tra
+        shell: powershell
+        run: |
+          Start-Sleep -Seconds 25
+          docker compose -f docker-compose-prod.yaml ps
+          curl.exe --fail http://localhost:3000/health
