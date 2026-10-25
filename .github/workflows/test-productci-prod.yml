@@ -1,0 +1,56 @@
+name: Product CI Prod
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1}).ok'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      MONGO_URI_TEST: mongodb://127.0.0.1:27017/productdb_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  docker-smoke-test:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dựng stack và chờ healthy
+        run: docker compose up -d --build --wait --wait-timeout 120
+
+      - name: Gọi thử API
+        run: |
+          curl --fail http://localhost:3000/health
+          curl --fail -X POST http://localhost:3000/products \
+            -H "Content-Type: application/json" \
+            -d '{"pid":"CI01","pname":"Test","price":10,"quantity":1}'
+          curl --fail http://localhost:3000/products/CI01
+
+      - name: In log nếu lỗi
+        if: failure()
+        run: docker compose logs
+
+      - name: Dọn dẹp
+        if: always()
+        run: docker compose down -v
